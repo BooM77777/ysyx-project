@@ -2,9 +2,25 @@
 #include <cpu/cpu.h>
 #include <readline/readline.h>
 #include <readline/history.h>
+#include <stdio.h>
+#include "common.h"
 #include "sdb.h"
+#include <memory/vaddr.h>
 
 static int is_batch_mode = false;
+
+int str_to_int(const char* input_str, bool* success) {
+  int ret = 0;
+  *success = true;
+  for (int i = 0; input_str[i] != 0 && input_str[i] != ' '; ++i) {
+    if (input_str[i] < '0' || input_str[i] > '9') {
+      *success = false;
+      break;
+    }
+    ret = ret * 10 + (input_str[i] - '0');
+  }
+  return ret;
+}
 
 void init_regex();
 void init_wp_pool();
@@ -39,17 +55,88 @@ static int cmd_q(char *args) {
 
 static int cmd_help(char *args);
 
+static int cmd_si(char *args) {
+  int n = 1;
+  if (sscanf(args, "%d", &n) != 1) {
+    TODO();
+  }
+  cpu_exec(n);
+  return 0;
+}
+
+static int cmd_info(char *args) {
+  switch (args[0]) {
+  case 'r':
+    isa_reg_display();
+    break; 
+  case 'w':
+    TODO();
+    break;
+  default:
+    TODO();
+  }
+  return 0;
+}
+
+static int cmd_x(char *args) {
+
+  int n;
+  char exp[1024];
+  if (sscanf(args, "%d %s", &n, exp) != 2) {
+    TODO();
+  }
+
+  bool success;
+  vaddr_t base_addr = expr(exp, &success);
+  if (!success) {
+    TODO();
+  }
+
+  for (int i = 0; i < n; i += 4) {
+    printf("0x%016lx:", base_addr);
+    for (int j = 0; j < 4 && (i + j) < n; ++j) {
+      printf("\t0x%08lx", vaddr_read(base_addr + j * 4, 4));
+    }
+    printf("\n");
+    base_addr += 16;
+  }
+  return 0;
+}
+
+static int cmd_p(char *args) {
+  bool success;
+  word_t value = expr(args, &success);
+  if (!success) {
+    TODO();
+  }
+  printf("Decimal format = %lu\t\tHexadecimal format = 0x%016lx\n", value, value);
+  return 0;
+}
+
+static int cmd_w(char *args) {
+  TODO();
+  return 0;
+}
+
+static int cmd_d(char *args) {
+  TODO();
+  return 0;
+}
+
 static struct {
   const char *name;
   const char *description;
   int (*handler) (char *);
 } cmd_table [] = {
   { "help", "Display informations about all supported commands", cmd_help },
-  { "c", "Continue the execution of the program", cmd_c },
-  { "q", "Exit NEMU", cmd_q },
-
-  /* TODO: Add more commands */
-
+  {    "c",             "Continue the execution of the program", cmd_c    },
+  {    "q",                                         "Exit NEMU", cmd_q    },
+  {   "si",                                                  "", cmd_si   },
+  { "info",                                                  "", cmd_info },
+  {    "x",                                                  "", cmd_x    },
+  {    "p",                                                  "", cmd_p    },
+  {    "w",                                                  "", cmd_w    },
+  {    "d",                                                  "", cmd_d    },
 };
 
 #define NR_CMD ARRLEN(cmd_table)
@@ -92,7 +179,9 @@ void sdb_mainloop() {
 
     /* extract the first token as the command */
     char *cmd = strtok(str, " ");
-    if (cmd == NULL) { continue; }
+    if (cmd == NULL) { 
+      continue; 
+    }
 
     /* treat the remaining string as the arguments,
      * which may need further parsing
@@ -110,7 +199,9 @@ void sdb_mainloop() {
     int i;
     for (i = 0; i < NR_CMD; i ++) {
       if (strcmp(cmd, cmd_table[i].name) == 0) {
-        if (cmd_table[i].handler(args) < 0) { return; }
+        if (cmd_table[i].handler(args) < 0) { 
+          return; 
+        }
         break;
       }
     }

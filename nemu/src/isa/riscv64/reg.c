@@ -8,9 +8,22 @@ const char *regs[] = {
   "s8", "s9", "s10", "s11", "t3", "t4", "t5", "t6"
 };
 
-void isa_reg_display() {
+word_t isa_reg_str2val(const char *s, bool *success) {
+  *success = true;
+  return 0;
 }
 
-word_t isa_reg_str2val(const char *s, bool *success) {
-  return 0;
+void isa_reg_display() {
+  word_t reg_val;
+  bool success;
+  for (int i = 0; i < 32; ++i) {
+    reg_val = isa_reg_str2val(regs[i], &success);
+    if (!success) {
+      assert(0);
+    }
+    printf("|\t%s\t%lu\t|", regs[i], reg_val);
+    if (i%4 == 3) {
+      printf("\n");
+    }
+  }
 }
