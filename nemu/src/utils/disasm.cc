@@ -3,12 +3,14 @@
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 #endif
 
-#include "llvm/MC/MCAsmInfo.h"
 #include "llvm/MC/MCContext.h"
 #include "llvm/MC/MCDisassembler/MCDisassembler.h"
 #include "llvm/MC/MCInstPrinter.h"
 #if LLVM_VERSION_MAJOR >= 14
 #include "llvm/MC/TargetRegistry.h"
+#include "llvm/MC/MCTargetOptions.h"
+#include "llvm/MC/MCSubtargetInfo.h"
+#include "llvm/MC/MCAsmInfo.h"
 #else
 #include "llvm/Support/TargetRegistry.h"
 #endif
