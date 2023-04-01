@@ -1,4 +1,6 @@
 #include <isa.h>
+#include <stdio.h>
+#include <string.h>
 #include "local-include/reg.h"
 
 const char *regs[] = {
@@ -9,19 +11,19 @@ const char *regs[] = {
 };
 
 word_t isa_reg_str2val(const char *s, bool *success) {
-  *success = true;
+  *success = false;
+  for (int i = 0; i < 32; ++i) {
+    if (strcmp(s, regs[i]) != 0) {
+      *success = true;
+      return gpr(i);
+    }
+  }
   return 0;
 }
 
 void isa_reg_display() {
-  word_t reg_val;
-  bool success;
   for (int i = 0; i < 32; ++i) {
-    reg_val = isa_reg_str2val(regs[i], &success);
-    if (!success) {
-      assert(0);
-    }
-    printf("|\t%s\t%lu\t|", regs[i], reg_val);
+    printf("|  %3s  0x%016lx  |", regs[i], gpr(i));
     if (i%4 == 3) {
       printf("\n");
     }

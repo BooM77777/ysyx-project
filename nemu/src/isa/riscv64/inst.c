@@ -1,14 +1,24 @@
+#include "debug.h"
 #include "local-include/reg.h"
+#include "macro.h"
 #include <cpu/cpu.h>
 #include <cpu/ifetch.h>
 #include <cpu/decode.h>
+#include <stdint.h>
+#include <stdio.h>
 
 #define R(i) gpr(i)
 #define Mr vaddr_read
 #define Mw vaddr_write
 
 enum {
-  TYPE_I, TYPE_U, TYPE_S,
+  TYPE_R,
+  TYPE_I, 
+  TYPE_S, 
+  TYPE_B, 
+  TYPE_U, 
+  TYPE_J, 
+  TYPE_C,
   TYPE_N, // none
 };
 
@@ -22,21 +32,62 @@ enum {
 static word_t immI(uint32_t i) { return SEXT(BITS(i, 31, 20), 12); }
 static word_t immU(uint32_t i) { return SEXT(BITS(i, 31, 12), 20) << 12; }
 static word_t immS(uint32_t i) { return (SEXT(BITS(i, 31, 25), 7) << 5) | BITS(i, 11, 7); }
+static word_t immJ(uint32_t i) 
+{ 
+  return SEXT(BITS(i, 31, 31) << 20, 1) 
+    | SEXT(BITS(i, 19, 12) << 12, 8) 
+    | SEXT(BITS(i, 21, 21) << 11, 1)
+    | SEXT(BITS(i, 30, 21) << 1, 10);
+}
+static word_t immC(uint16_t i)
+{
+  return SEXT(BITS(i, 12, 12), 1) | SEXT(BITS(i, 6, 2), 5);
+}
 
-static void decode_operand(Decode *s, word_t *dest, word_t *src1, word_t *src2, int type) {
+static void decode_operand(Decode *s, word_t *dest, word_t *src1, word_t *src2, int type) 
+{
   uint32_t i = s->isa.inst.val;
   int rd  = BITS(i, 11, 7);
   int rs1 = BITS(i, 19, 15);
   int rs2 = BITS(i, 24, 20);
   destR(rd);
   switch (type) {
-    case TYPE_I: src1R(rs1);     src2I(immI(i)); break;
-    case TYPE_U: src1I(immU(i)); break;
-    case TYPE_S: destI(immS(i)); src1R(rs1); src2R(rs2); break;
+  case TYPE_R:
+    src1R(rs1);
+    src2R(rs2);
+    break;
+  case TYPE_I: 
+    destR(rd);
+    src1R(rs1);
+    src2I(immI(i));
+    break;
+  case TYPE_S: 
+    destI(immS(i));
+    src1R(rs1); 
+    src2R(rs2); 
+    break;
+  case TYPE_B: 
+    TODO();
+    break;
+  case TYPE_U: 
+    src1I(immU(i)); 
+    break;
+  case TYPE_J:
+    src1I(immJ(i));
+    break;
+  case TYPE_C:
+    src1I(immC((uint16_t)i));
+    break;
+  case TYPE_N:
+    break;
+  default:
+    panic("undefined instruction format\n");
   }
 }
 
-static int decode_exec(Decode *s) {
+static int decode_exec(Decode *s) 
+{
+  // printf("0x%x\n", s->isa.inst.val);
   word_t dest = 0, src1 = 0, src2 = 0;
   s->dnpc = s->snpc;
 
@@ -47,12 +98,38 @@ static int decode_exec(Decode *s) {
 }
 
   INSTPAT_START();
+  // add upper immediate to pc
   INSTPAT("??????? ????? ????? ??? ????? 00101 11", auipc  , U, R(dest) = src1 + s->pc);
   INSTPAT("??????? ????? ????? 011 ????? 00000 11", ld     , I, R(dest) = Mr(src1 + src2, 8));
   INSTPAT("??????? ????? ????? 011 ????? 01000 11", sd     , S, Mw(src1 + dest, 8, src2));
 
   INSTPAT("0000000 00001 00000 000 00000 11100 11", ebreak , N, NEMUTRAP(s->pc, R(10))); // R(10) is $a0
-  INSTPAT("??????? ????? ????? ??? ????? ????? ??", inv    , N, INV(s->pc));
+   
+  // sd
+
+  // load
+  // store
+  //sw for 32bit
+  //sh for 16bit
+  //sb for 8bit
+
+  // lui (load upper immediate)
+  INSTPAT("??????? ????? ????? ??? ????? 01101 11", lui, U, R(dest) = src1);
+  // addi
+  INSTPAT("??????? ????? ????? 000 ????? 00100 11", addi, I, R(dest) = src1 + src2);
+  // jal (jump and link)
+  INSTPAT("??????? ????? ????? ??? ????? 11011 11", jal, J, R(dest) = s->pc + 4; s->dnpc = s->pc + src1);
+  // jalr (jump and link register)
+  INSTPAT("??????? ????? ????? 000 ????? 11001 11", jalr, I, R(dest) = s->pc + 4; s->dnpc = (src1 + src2) & (~0x1));
+
+
+  INSTPAT("??????? ????? ????? ??? ????? ????? ??", inv, N, INV(s->pc));
+
+  // li =>  addi
+  // ret => jalr x0, x1, 0
+  // mv => ADDI rd, rs, 0
+  // j => jal
+
   INSTPAT_END();
 
   R(0) = 0; // reset $zero to 0
@@ -60,7 +137,8 @@ static int decode_exec(Decode *s) {
   return 0;
 }
 
-int isa_exec_once(Decode *s) {
+int isa_exec_once(Decode *s) 
+{
   s->isa.inst.val = inst_fetch(&s->snpc, 4);
   return decode_exec(s);
 }

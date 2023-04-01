@@ -8,7 +8,7 @@ REPO_MAKEFILE = $(REPO_BUILD_PATH)/Makefile
 $(REPO_MAKEFILE):
 	@mkdir -p $(@D)
 	cd $(@D) && $(abspath $(REPO_PATH))/configure
-	sed -i -e 's/-g -O2/-O2/' $@
+	sed -i -e 's/-g -O0/-O0/' $@
 
 SPIKE = $(REPO_BUILD_PATH)/spike
 $(SPIKE): $(REPO_MAKEFILE)
@@ -28,7 +28,7 @@ BINARY = $(BUILD_DIR)/$(NAME)
 SRCS = difftest.cc
 
 $(BINARY): $(SPIKE) $(SRCS)
-	g++ -O2 -shared -fPIC $(INC_PATH) $(SRCS) $(INC_LIBS) -o $@
+	g++ -O0 -shared -fPIC $(INC_PATH) $(SRCS) $(INC_LIBS) -o $@
 
 clean:
 	rm -rf $(BUILD_DIR)
