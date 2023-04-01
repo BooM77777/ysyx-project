@@ -6,7 +6,15 @@
 #include <utils.h>
 
 #define Log(format, ...) \
-    _Log(ANSI_FMT("[%s:%d %s] " format, ANSI_FG_BLUE) "\n", \
+    _Log(ANSI_FMT("[LOG\t%s:%d %s] " format, ANSI_FG_GREEN) "\n", \
+        __FILE__, __LINE__, __func__, ## __VA_ARGS__)
+
+#define Warn(format, ...) \
+    _Log(ANSI_FMT("[WARN\t%s:%d %s] " format, ANSI_FG_YELLOW) "\n", \
+        __FILE__, __LINE__, __func__, ## __VA_ARGS__)
+
+#define Debug(format, ...) \
+    _Log(ANSI_FMT("[DEBUG\t%s:%d %s] " format, ANSI_FG_BLUE) "\n", \
         __FILE__, __LINE__, __func__, ## __VA_ARGS__)
 
 #define Assert(cond, format, ...) \

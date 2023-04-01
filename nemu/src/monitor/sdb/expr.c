@@ -8,7 +8,8 @@
 #include <stdio.h>
 #include <memory/vaddr.h>
 
-enum {
+enum 
+{
   TK_NOTYPE,
   TK_EQ,
   TK_NEQ,
@@ -26,10 +27,13 @@ enum {
   TK_AND,
 };
 
-static struct rule {
+static struct rule 
+{
   const char *regex;
   int token_type;
-} rules[] = {
+} 
+rules[] = 
+{
   {"0[xX][0-9a-f]+", TK_HEX},
   {"[0-9]+", TK_NUM},
   {"\\$[0-9A-Za-z]+", TK_REG},
@@ -53,7 +57,8 @@ static regex_t re[NR_REGEX] = {};
 /* Rules are used for many times.
  * Therefore we compile them only once before any usage.
  */
-void init_regex() {
+void init_regex()
+{
   int i;
   char error_msg[128];
   int ret;
@@ -67,7 +72,8 @@ void init_regex() {
   }
 }
 
-typedef struct token {
+typedef struct token 
+{
   int type;
   int val;
 } Token;
@@ -75,7 +81,8 @@ typedef struct token {
 static Token tokens[32] __attribute__((used)) = {};
 static int nr_token __attribute__((used))  = 0;
 
-static bool make_token(char *e) {
+static bool make_token(char *e) 
+{
   int position = 0;
   int i;
   regmatch_t pmatch;
@@ -169,7 +176,8 @@ static bool make_token(char *e) {
   return true;
 }
 
-inline int updateDepth(int i) {
+inline int updateDepth(int i) 
+{
   switch (tokens[i].type) {
     case TK_RB:
       return 1;
@@ -179,9 +187,8 @@ inline int updateDepth(int i) {
   return 0;
 }
 
-
-// 1 + *0x80000000 * 1
-word_t get_tokens_res(int l, int r) {
+word_t get_tokens_res(int l, int r) 
+{
 
   assert(l <= r);
 

@@ -70,7 +70,7 @@ static int cmd_info(char *args) {
     isa_reg_display();
     break; 
   case 'w':
-    TODO();
+    print_all_wp();
     break;
   default:
     TODO();
@@ -114,12 +114,14 @@ static int cmd_p(char *args) {
 }
 
 static int cmd_w(char *args) {
-  TODO();
+  new_wp(args);
   return 0;
 }
 
 static int cmd_d(char *args) {
-  TODO();
+  word_t watchpoint_id;
+  sscanf(args, "%lu", &watchpoint_id);
+  free_wp(watchpoint_id);
   return 0;
 }
 
