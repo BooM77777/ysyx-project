@@ -1,5 +1,5 @@
 .vscode/
 /fceux-am
 
-am-kernels/**
-abstract-machine/**
+am-kernels/
+abstract-machine/
